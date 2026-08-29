@@ -3,11 +3,18 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+from seo_optimizer.data import CHECKLIST_CATALOG
+from seo_optimizer.data_seo import TECHNICAL_SEO_CATALOG, CRO_CATALOG
 from seo_optimizer.gui.style import apply_style, COLORS, FONT_HEADER
+from seo_optimizer.gui.base import GroupTab
 from seo_optimizer.gui.dialogs import NeuerKundeDialog
 from seo_optimizer.gui.tabs import StammdatenTab, ChecklistTab, KeywordTab, DirectoryTab, ReportTab
+from seo_optimizer.gui.tabs_overview import OverviewTab
+from seo_optimizer.gui.tabs_analyse import OnPageAuditTab, RankingTab
+from seo_optimizer.gui.tabs_content import RedaktionsplanTab, BriefingTab, TextAnalyseTab
+from seo_optimizer.gui.tabs_conversion import TrichterTab, ABTestTab
 
-APP_TITEL = "Lokal-SEO Manager fuer Handwerksbetriebe"
+APP_TITEL = "SEO-Manager fuer Handwerksbetriebe"
 
 
 class MainWindow(tk.Tk):
@@ -63,7 +70,7 @@ class MainWindow(tk.Tk):
         columns = ("firma", "fortschritt")
         self.tree = ttk.Treeview(inner, columns=columns, show="headings", selectmode="browse")
         self.tree.heading("firma", text="Firma / Gewerk")
-        self.tree.heading("fortschritt", text="SEO %")
+        self.tree.heading("fortschritt", text="Score")
         self.tree.column("firma", width=200, anchor="w")
         self.tree.column("fortschritt", width=60, anchor="center")
         self.tree.pack(fill="both", expand=True)
@@ -110,11 +117,44 @@ class MainWindow(tk.Tk):
         self.notebook = ttk.Notebook(detail)
         self.notebook.pack(fill="both", expand=True)
 
+        # Verwandte Werkzeuge werden in Gruppen-Tabs gebuendelt, damit die
+        # Hauptnavigation trotz des grossen Funktionsumfangs uebersichtlich bleibt.
+        self.overview_tab = OverviewTab(self.notebook, self)
+
+        analyse = GroupTab(self.notebook, self)
+        self.audit_tab = analyse.add_subtab("OnPage-Audit", OnPageAuditTab(analyse.notebook, self))
+        self.ranking_tab = analyse.add_subtab("Rankings", RankingTab(analyse.notebook, self))
+
+        content = GroupTab(self.notebook, self)
+        self.redaktionsplan_tab = content.add_subtab(
+            "Redaktionsplan", RedaktionsplanTab(content.notebook, self))
+        content.add_subtab("Content-Briefing", BriefingTab(content.notebook, self))
+        content.add_subtab("Textanalyse", TextAnalyseTab(content.notebook, self))
+
+        checklisten = GroupTab(self.notebook, self)
+        checklisten.add_subtab("Technik & OnPage", ChecklistTab(
+            checklisten.notebook, self, TECHNICAL_SEO_CATALOG,
+            "Fortschritt technisches SEO & OnPage"))
+        checklisten.add_subtab("Lokale SEO", ChecklistTab(
+            checklisten.notebook, self, CHECKLIST_CATALOG,
+            "Fortschritt lokale SEO"))
+        checklisten.add_subtab("Conversion (CRO)", ChecklistTab(
+            checklisten.notebook, self, CRO_CATALOG,
+            "Fortschritt Conversion-Optimierung"))
+        checklisten.add_subtab("Verzeichnisse", DirectoryTab(checklisten.notebook, self))
+
+        conversion = GroupTab(self.notebook, self)
+        conversion.add_subtab("Trichter & ROI", TrichterTab(conversion.notebook, self))
+        conversion.add_subtab("A/B-Test", ABTestTab(conversion.notebook, self))
+
         self.tabs = {
+            "Uebersicht": self.overview_tab,
             "Stammdaten": StammdatenTab(self.notebook, self),
-            "SEO-Checkliste": ChecklistTab(self.notebook, self),
-            "Keyword-Generator": KeywordTab(self.notebook, self),
-            "Verzeichnisse": DirectoryTab(self.notebook, self),
+            "Keywords": KeywordTab(self.notebook, self),
+            "Analyse": analyse,
+            "Content": content,
+            "Checklisten": checklisten,
+            "Conversion": conversion,
             "Report": ReportTab(self.notebook, self),
         }
         for name, tab in self.tabs.items():
@@ -143,8 +183,8 @@ class MainWindow(tk.Tk):
             label = f"{client['firma']} ({client.get('gewerk') or '–'})"
             if query and query not in label.lower():
                 continue
-            gesamt, _ = self.db.checklist_progress(client["id"])
-            self.tree.insert("", "end", iid=str(client["id"]), values=(label, f"{gesamt}%"))
+            gesamt, _ = self.db.gesamt_score(client["id"])
+            self.tree.insert("", "end", iid=str(client["id"]), values=(label, f"{gesamt}"))
 
         if selected_id is not None and self.tree.exists(str(selected_id)):
             self.tree.selection_set(str(selected_id))
@@ -173,6 +213,7 @@ class MainWindow(tk.Tk):
         self.status_bar.config(text=f"Datenbank: {self.db.db_path}  |  Kunde geladen: {client['firma']}")
 
     def on_client_updated(self, client_id):
+        """Wird von den Tabs aufgerufen, sobald sich Kundendaten geaendert haben."""
         self.refresh_client_list()
         if client_id == self.current_client_id:
             client = self.db.get_client(client_id)
@@ -180,6 +221,13 @@ class MainWindow(tk.Tk):
                 self.client_title.config(
                     text=f"{client['firma']}  ·  {client.get('gewerk') or 'kein Gewerk gesetzt'}"
                 )
+            # Das Dashboard soll den aktuellen Stand zeigen, ohne dass der
+            # Nutzer den Kunden neu auswaehlen muss.
+            self.overview_tab.aktualisiere()
+
+    def aktualisiere_content_tabs(self):
+        """Laedt den Redaktionsplan neu (z. B. nach Uebernahme aus dem Briefing)."""
+        self.redaktionsplan_tab.aktualisiere()
 
     def neuer_kunde(self):
         dialog = NeuerKundeDialog(self)

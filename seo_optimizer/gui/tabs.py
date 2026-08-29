@@ -10,20 +10,9 @@ import tkinter as tk
 from seo_optimizer.data import CHECKLIST_CATALOG, DIRECTORIES, GEWERKE
 from seo_optimizer.keyword_generator import generate_keywords
 from seo_optimizer.report import save_report
+from seo_optimizer.gui.base import BaseTab
 from seo_optimizer.gui.widgets import ScrollableFrame, ProgressRow
 from seo_optimizer.gui.style import FONT_BOLD, FONT_SMALL
-
-
-class BaseTab(ttk.Frame):
-    """Gemeinsame Basis fuer alle Kunden-Tabs."""
-
-    def __init__(self, parent, app):
-        super().__init__(parent, padding=16)
-        self.app = app
-        self.client = None
-
-    def load_client(self, client):
-        self.client = client
 
 
 class StammdatenTab(BaseTab):
@@ -101,21 +90,25 @@ class StammdatenTab(BaseTab):
 
 
 class ChecklistTab(BaseTab):
-    def __init__(self, parent, app):
+    """Abhakbare Checkliste fuer einen beliebigen Katalog (lokal, technisch, CRO)."""
+
+    def __init__(self, parent, app, catalog=None, titel="Gesamtfortschritt SEO-Checkliste"):
         super().__init__(parent, app)
+        self.catalog = catalog if catalog is not None else CHECKLIST_CATALOG
+        self.titel = titel
         self.item_vars = {}
         self.category_progress = {}
         self._build()
 
     def _build(self):
-        self.overall_progress = ProgressRow(self, "Gesamtfortschritt SEO-Checkliste")
+        self.overall_progress = ProgressRow(self, self.titel)
         self.overall_progress.pack(fill="x", pady=(0, 12))
 
         scroll = ScrollableFrame(self)
         scroll.pack(fill="both", expand=True)
         container = scroll.inner
 
-        for kategorie, items in CHECKLIST_CATALOG.items():
+        for kategorie, items in self.catalog.items():
             frame = ttk.Labelframe(container, text=kategorie, padding=10)
             frame.pack(fill="x", pady=8, padx=2)
 
@@ -149,13 +142,13 @@ class ChecklistTab(BaseTab):
             for progress in self.category_progress.values():
                 progress.set_value(0)
             return
-        status = self.app.db.get_checklist_status(client["id"])
+        status = self.app.db.get_checklist_status(client["id"], self.catalog)
         for key, var in self.item_vars.items():
             var.set(status.get(key, False))
         self._refresh_progress()
 
     def _refresh_progress(self):
-        gesamt, kategorien = self.app.db.checklist_progress(self.client["id"])
+        gesamt, kategorien = self.app.db.checklist_progress(self.client["id"], self.catalog)
         self.overall_progress.set_value(gesamt)
         for kategorie, progress in self.category_progress.items():
             progress.set_value(kategorien.get(kategorie, 0))
@@ -374,10 +367,10 @@ class ReportTab(BaseTab):
         if client is None:
             self.summary_label.config(text="")
             return
-        gesamt, _ = self.app.db.checklist_progress(client["id"])
-        dir_progress = self.app.db.directory_progress(client["id"])
+        gesamt, teilbereiche = self.app.db.gesamt_score(client["id"])
+        teile = "   |   ".join(f"{name}: {wert}%" for name, wert in teilbereiche.items())
         self.summary_label.config(
-            text=f"{client['firma']}  –  SEO-Checkliste: {gesamt}%   |   Verzeichnisse: {dir_progress}%"
+            text=f"{client['firma']}  –  Gesamt-SEO-Score: {gesamt}/100\n{teile}"
         )
 
     def create_report(self):

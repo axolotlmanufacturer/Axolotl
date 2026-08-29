@@ -75,8 +75,9 @@ KEYWORD_MODIFIERS = [
     "was kostet {leistung} in {ort}",
 ]
 
-# Checkliste fuer lokale SEO-Optimierung, gegliedert nach Kategorien.
+# Checkliste fuer die *lokale* SEO-Optimierung, gegliedert nach Kategorien.
 # Jeder Eintrag ist ein Tupel (eindeutiger_key, Beschreibungstext).
+# Allgemeine (nicht ortsbezogene) SEO-Punkte stehen in data_seo.py.
 CHECKLIST_CATALOG = {
     "Google Unternehmensprofil": [
         ("gmb_claimed", "Eintrag beansprucht und verifiziert"),
@@ -94,20 +95,13 @@ CHECKLIST_CATALOG = {
         ("gmb_produkte", "Dienstleistungen mit Beschreibung/Preisen angelegt"),
         ("gmb_attribute", "Attribute (z. B. Notdienst, Kostenvoranschlag) gesetzt"),
     ],
-    "Website & On-Page SEO": [
-        ("web_title", "Title-Tags enthalten Leistung + Ort"),
-        ("web_meta", "Meta-Descriptions mit Call-to-Action & Ort optimiert"),
-        ("web_h1", "H1 pro Seite eindeutig mit lokalem Bezug"),
+    "Lokale Website-Signale": [
         ("web_landingpages", "Eigene Landingpage je Einzugsgebiet/Stadtteil"),
         ("web_schema", "LocalBusiness-Schema (JSON-LD) eingebunden"),
         ("web_nap", "NAP (Name, Adresse, Telefon) im Footer konsistent"),
-        ("web_responsive", "Mobile Darstellung optimiert (Responsive Design)"),
-        ("web_speed", "Ladezeit unter 3 Sekunden (PageSpeed geprueft)"),
-        ("web_ssl", "SSL-Zertifikat (https) aktiv"),
-        ("web_cta", "Kontaktformular & Klick-to-Call auf Mobilgeraeten"),
+        ("lokal_kontaktseite", "Kontaktseite mit Karte, Anfahrt & Ansprechpartner"),
+        ("lokal_einzugsgebiet", "Einzugsgebiet/Servicegebiet auf der Website benannt"),
         ("web_rechtliches", "Impressum & Datenschutzerklaerung DSGVO-konform"),
-        ("web_searchconsole", "Google Search Console eingerichtet & Sitemap eingereicht"),
-        ("web_analytics", "Datenschutzkonformes Tracking eingerichtet"),
     ],
     "Bewertungen & Reputation": [
         ("rev_prozess", "Aktiver Prozess zur Bewertungsanfrage nach Auftrag"),
