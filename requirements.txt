@@ -1,0 +1,6 @@
+# Diese Anwendung nutzt ausschliesslich die Python-Standardbibliothek
+# (tkinter, sqlite3, csv, webbrowser, ...). Es sind keine zusaetzlichen
+# Pakete per pip zu installieren.
+#
+# Voraussetzung ist lediglich, dass tkinter fuer die verwendete
+# Python-Installation verfuegbar ist (siehe README.md).
